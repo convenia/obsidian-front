@@ -10,7 +10,9 @@ date: 2026-09-24
 
 ## O que e
 
-O modelo de parametros que permite um unico padrao de SPA (container + store + service + loader + teste) servir varias "visoes" (spa-admin, spa-colab-self, spa-colab-supervisor). Todo guia deste Playbook e escrito contra esses tokens — antes de aplicar qualquer guia, resolva os tokens pra sua visao.
+O modelo de parametros que permite um unico padrao de SPA (container + store + service + loader + teste) servir varias "visoes" — SPAs ou papeis diferentes que consomem o mesmo organism compartilhado. Todo guia deste Playbook e escrito contra esses tokens — antes de aplicar qualquer guia, resolva os tokens pra sua visao.
+
+A tecnica (parametrizar por visao) e generica — qualquer organism consumido por mais de uma SPA/papel se beneficia dela. A tabela abaixo usa **spa-admin / spa-colab-self** como exemplo concreto real (as duas visoes que hoje consomem cards System+Custom Fields); pra um organism novo, preencha as colunas com as visoes que ele de fato tem.
 
 ## Por que existe
 
@@ -28,7 +30,7 @@ Se um token nao tiver binding definido pra sua visao, pare — o padrao nao esta
 | `<TYPE_NS>` | namespace dos types | `employee/` | `information/` |
 | `<STORE_MODULE>` | nome do modulo Vuex | `employee<Area>` | `information<Area>` |
 | `<MODULE_REG>` | como o modulo e registrado | `meta.storeModules` da rota | export no barrel `src/Information/store/index.js` |
-| `<VISAO>` | segmento de role em `/fields/{route}` | fixo `admin` | param `route`, default `'employee'` |
+| `<VISAO>` | segmento de role no `<METADATA_ENDPOINT>` | fixo `admin` | param `route`, default `'employee'` |
 | `<REST_MW>` | import do middleware REST | `@modules/request/middlewareRest` | `@modules/http/middlewareRest` |
 | `<ID_SOURCE>` | origem do id da empresa/colaborador | `companyUuid` de `@modules/authHelpers` | `COMPANY_UUID`/`EMPLOYEE_UUID` de `@src/cookies` |
 | `<CAN_EDIT_EXPR>` | como deriva `canEdit` | `!isDisconnected` (modulo `employee`) | fixo `true` no card V2 migrado |

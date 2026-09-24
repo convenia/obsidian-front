@@ -25,10 +25,8 @@ const { addLoader, isLoading } = useLoaders()
 const { <entity> } = mapState('<STORE_MODULE>')
 
 const {
-  [types.<TYPE_PREFIX>_GET_<AREA>_FIELDS]: getFields,
+  [types.<TYPE_PREFIX>_GET_<AREA>_METADATA]: getFieldsMetadata,
   [types.<TYPE_PREFIX>_GET_<AREA>_SECTIONS]: getSections,
-  [types.COMMON_STATES]: getStates,
-  [types.COMMON_OPTIONS_GET_CITIES]: getCities,
 } = mapActions()
 
 provide('employeeId', route.params.employeeId || employeeIdFrom<ID_SOURCE>)   // so no pai
@@ -37,11 +35,9 @@ provide('getFileUrl', getFileUrl)                                             //
 addLoader(async () => {
   const { employeeId } = route.params
   await Promise.allSettled([
-    getFields({ employeeId }),
+    getFieldsMetadata({ employeeId }),
     getSections({ employeeId }),
-    getStates(),
   ])
-  if (<entity>.value?.state?.id) await getCities(<entity>.value.state.id)
 })
 </script>
 
@@ -73,14 +69,16 @@ export default { name: '<Module><ContainerArea>Container' }
 </style>
 ```
 
-`provide` do container filho (`getCities`, escopo daquele card apenas):
+`provide` do container filho (escopo daquele card apenas) — pra uma option genuinamente dependente:
 
 ```js
-const getCities = (stateId) => getStateCities(stateId)   // <TYPE_PREFIX>_OPTIONS_GET_CITIES -> [err, data]
-provide('getCities', getCities)
+const getDependentOption = (parentValue) => getStoreDependentOption(parentValue)   // action de options -> [err, data]
+provide('getDependentOption', getDependentOption)
 ```
 
-Regras a nao esquecer: espacamento/loader ficam so no pai; `provide` de escopo geral (`employeeId`) so no pai, `provide` de escopo de card (`getCities`, `getZipCode`) so no container filho; sem fetch de options pra select que ja vem no payload de fields.
+> **Exemplo real:** um card com endereco carrega o loader pai com `getStates()` no mesmo batch, e o container filho fornece `getCities(stateId)` como option dependente do estado selecionado.
+
+Regras a nao esquecer: espacamento/loader ficam so no pai; `provide` de escopo geral (`employeeId`) so no pai, `provide` de escopo de card (option dependente, `getZipCode` etc.) so no container filho; sem fetch de options pra select que ja vem no payload de metadado.
 
 ## Referencias cruzadas
 

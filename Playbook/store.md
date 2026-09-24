@@ -8,7 +8,7 @@ date: 2026-09-24
 
 # Store Slice e Types
 
-> Resolver os tokens pela [[Playbook/visao-profile]] antes de aplicar este guia. O shape de store e UNIFICADO pra qualquer visao.
+> Resolver os tokens pela [[Playbook/visao-profile]] antes de aplicar este guia. O shape de store e UNIFICADO pra qualquer visao — e pra qualquer card, nao so um dominio especifico.
 
 ## O que e
 
@@ -18,14 +18,13 @@ O state, os type constants, as mutations e as actions da store Vuex de uma area 
 
 ```js
 const state = {
-  <entityA>: [],      // slices de entidade existentes, sem mudanca
+  <entityA>: [],       // slices de entidade existentes, sem mudanca
   <entityB>: {},
-  systemFields: {},    // par espelhado — ambos chaveados por sub-area
-  customFields: {},
+  fieldsMetadata: {},  // metadado de campos do card, chaveado por sub-area
 }
 ```
 
-`systemFields` sempre espelha `customFields`: mesmas chaves de sub-area, mesmo ciclo de vida.
+> **Exemplo real:** em cards System+Custom Fields o metadado se divide em dois slices espelhados, `systemFields` e `customFields` (mesmas chaves de sub-area, mesmo ciclo de vida). Um card sem essa distincao usa um unico slice `fieldsMetadata`.
 
 ## Naming (convencao canonica)
 
@@ -37,16 +36,16 @@ Todo type constant coloca o prefixo da feature primeiro, depois o verbo: `<TYPE_
 
 ## Types
 
-Um par FIELDS (uma action busca os dois eixos; uma mutation escreve os dois slices) + um par SECTIONS orquestrador (as leituras de entidade passam por ele):
+Um par METADATA (uma action busca o metadado do card; uma mutation escreve o slice) + um par SECTIONS orquestrador (as leituras de entidade passam por ele):
 
 ```js
-export const <TYPE_PREFIX>_GET_<AREA>_FIELDS = '<TYPE_NS><TYPE_PREFIX>_GET_<AREA>_FIELDS'
-export const <TYPE_PREFIX>_SET_<AREA>_FIELDS = '<TYPE_NS><TYPE_PREFIX>_SET_<AREA>_FIELDS'
+export const <TYPE_PREFIX>_GET_<AREA>_METADATA = '<TYPE_NS><TYPE_PREFIX>_GET_<AREA>_METADATA'
+export const <TYPE_PREFIX>_SET_<AREA>_METADATA = '<TYPE_NS><TYPE_PREFIX>_SET_<AREA>_METADATA'
 export const <TYPE_PREFIX>_GET_<AREA>_SECTIONS = '<TYPE_NS><TYPE_PREFIX>_GET_<AREA>_SECTIONS'
 export const <TYPE_PREFIX>_SET_<AREA>_SECTIONS = '<TYPE_NS><TYPE_PREFIX>_SET_<AREA>_SECTIONS'
 ```
 
-Remova o legado `<TYPE_PREFIX>_<AREA>_CUSTOM_FIELDS` e qualquer split `GET/SET_SYSTEM_FIELDS` + `GET/SET_CUSTOM_FIELDS`.
+Remova qualquer type legado que buscava metadado em pedacos separados (uma rota/action por sub-recorte do metadado).
 
 Card com attachment adiciona um trio de arquivo: `<TYPE_PREFIX>_UPDATE_<AREA>_<ENTITY>_FILES` substitui os dois types de upload/delete separados.
 
@@ -57,9 +56,9 @@ Uma unica action `<TYPE_PREFIX>_UPDATE_<AREA>_<ENTITY>` serve create e update, t
 ```js
 [types.<TYPE_PREFIX>_UPDATE_<AREA>_<ENTITY>]: async ({ dispatch, state }, payload) => {
   const { employeeId, ...rest } = payload || {}
-  const schema = state.customFields?.<sub> || {}   // NAO: const { schema } = ...
+  const metadata = state.fieldsMetadata?.<sub> || {}   // NAO: const { metadata } = ...
   const isCreating = !payload.id
-  const params = { employeeId, schema, ...rest }
+  const params = { employeeId, metadata, ...rest }
 
   const [ err, data ] = isCreating
     ? await services.create<Entity>(params)
@@ -69,7 +68,7 @@ Uma unica action `<TYPE_PREFIX>_UPDATE_<AREA>_<ENTITY>` serve create e update, t
 
   if (!err) {
     await dispatch(types.<TYPE_PREFIX>_GET_<ENTITY>, { employeeId })
-    // tambem refazer o fetch de <TYPE_PREFIX>_GET_<AREA>_FIELDS pra atualizar compulsory/disabled
+    // tambem refazer o fetch de <TYPE_PREFIX>_GET_<AREA>_METADATA pra atualizar compulsory/disabled
   }
 
   return [ err, data ]
@@ -77,7 +76,7 @@ Uma unica action `<TYPE_PREFIX>_UPDATE_<AREA>_<ENTITY>` serve create e update, t
 ```
 
 - Decide via `!payload.id` — nunca adicione uma action `CREATE_*` separada, e o container nunca escolhe o branch (ver [[Playbook/container]]).
-- No sucesso, refaz o GET da entidade especifica **e** o GET_FIELDS da area (pra atualizar `compulsory`/`disabled`).
+- No sucesso, refaz o GET da entidade especifica **e** o GET de metadado da area (pra atualizar `compulsory`/`disabled`).
 
 ## Action de arquivo
 
@@ -85,7 +84,7 @@ Uma unica action (`<TYPE_PREFIX>_UPDATE_<AREA>_<ENTITY>_FILES`) roda uploads e r
 
 ## O que remover ao migrar
 
-- `resolveCustomFieldValues` na mutation SET — o organism resolve valores de custom field internamente numa sub-area migrada.
+- Qualquer resolucao de valor de campo dinamico feita na mutation SET — o organism resolve isso internamente numa sub-area migrada.
 - Leituras de entidade espalhadas fora do orquestrador SECTIONS.
 
 ## Referencias cruzadas

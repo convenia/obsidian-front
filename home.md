@@ -11,7 +11,7 @@ aliases:
 
 # Home
 
-Este vault funciona como um segundo cerebro operacional para orientar devs e IA na arquitetura frontend das SPAs Convenia — o padrao de card que consome um organism de `@convenia/components` (fields de sistema + fields customizados, container fino, store Vuex, testes Playwright).
+Este vault funciona como um segundo cerebro operacional para orientar devs e IA na arquitetura frontend das SPAs Convenia — o padrao generico de card que consome um organism de `@convenia/components` (metadado de campos + entidade, container fino, store Vuex, testes Playwright), aplicavel a qualquer dominio, nao so a um card especifico.
 
 > [!info] Fluxo principal
 > Use [[Playbook/playbook]] pra entender o padrao e [[Templates/templates]] pra gerar codigo a partir dele.
@@ -33,4 +33,4 @@ Este vault funciona como um segundo cerebro operacional para orientar devs e IA 
 
 ## Origem do conteudo
 
-O padrao documentado aqui foi destrinchado da skill `spas-reference` (submodule `.@convenia` do repo `spa-colab`, path `src/organisms/Employee/SystemFields/specs/skills/spas-reference/`), que documenta a migracao de cards para o padrao System+Custom Fields. Este vault generaliza esse padrao pra qualquer card, nao so System Fields, e reescreve o conteudo em formato de guia em vez de skill instalavel.
+O padrao documentado aqui foi destrinchado das skills `spas-reference` e `system-custom-fields-organism` (submodule `.@convenia` do repo `spa-colab`, path `src/organisms/Employee/SystemFields/specs/skills/`), que documentam a migracao de cards System+Custom Fields. Este vault generaliza esse conteudo pra qualquer card que consome um organism compartilhado — System+Custom Fields aparece so como "Exemplo real" pontual dentro dos guias, nunca como o vocabulario padrao das regras.

@@ -9,7 +9,7 @@ date: 2026-09-24
 
 # Testing — Playwright E2E
 
-> Resolver os tokens pela [[Playbook/visao-profile]] antes de aplicar este guia. O shape de teste e identico entre visoes — so os valores mudam.
+> Resolver os tokens pela [[Playbook/visao-profile]] antes de aplicar este guia. O shape de teste e identico entre visoes e entre cards — so os valores mudam.
 
 ## O que e
 
@@ -17,13 +17,13 @@ Como o lado SPA de uma migracao de card e validado: specs de integracao Playwrig
 
 ## Escopo
 
-O lado SPA e validado por specs de integracao Playwright — nao crie teste unitario novo pro container. Regra de field (validacao, mask, `hide` condicional, obrigatoriedade) e territorio de teste unitario do organism, nao Playwright. Renderizar um valor de custom field ponta a ponta (fetch → store → widget do organism) e integracao e entra no set canonico.
+O lado SPA e validado por specs de integracao Playwright — nao crie teste unitario novo pro container. Regra de field (validacao, mask, `hide` condicional, obrigatoriedade) e territorio de teste unitario do organism, nao Playwright. Renderizar um valor de campo ponta a ponta (fetch → store → widget do organism) e integracao e entra no set canonico.
 
 ## Layout
 
 ```
 <spec root>/<Area>/<Group>/
-├── data/            # fixtures *.json (Config, GetEmployeeFields, Get/Update/Create/Delete<Entity>, +Error, +CustomFields, GetCities)
+├── data/            # fixtures *.json (Config, metadado de campos, Get/Update/Create/Delete<Entity>, +Error, +variantes)
 ├── pages/
 │   └── <Group>Page.js   # a POM — navegacao + mock de API, SEM seletor
 └── specs/
@@ -33,20 +33,22 @@ O lado SPA e validado por specs de integracao Playwright — nao crie teste unit
 
 Cards irmaos de uma area compartilham uma unica POM e um unico `setup.js`. O `<Area>` do spec root precisa ser o mesmo valor usado em `containers/<Area>/`, `services/<Area>/` e `store/<Area>/` — ver [[Playbook/red-flags]] *drift de `<Area>`*.
 
-## Fixture de fields
+## Fixture de metadado
 
-A fixture de fields e JSON estatico — nunca uma factory programatica (`mocks/GetEmployeeFields.js`) pro payload de fields, isso desvia do contrato. A fixture carrega so `data.sections`; o formato legado `data.fields` cai fora. Como o fetch unificado retorna todas as sections, a fixture compartilhada carrega todo sub-card da area — nao existe fixture de fields por card.
+A fixture de metadado e JSON estatico — nunca uma factory programatica pro payload de metadado, isso desvia do contrato. A fixture carrega so `data.sections`. Como o fetch unificado retorna todas as sections, a fixture compartilhada carrega todo sub-card da area — nao existe fixture de metadado por card.
 
 ## Set canonico single-item (seis testes, nesta ordem)
 
-1. **`@always`** — renderiza o card e abre o modal de edicao com os system fields.
-2. Renderiza todo valor de custom e system field no card e no modal — um teste consolidado (nao dividir). Precisa cobrir **um custom field por tipo** que o organism suporta: `string` (texto), `list` (single-select), `multiple` (multi-select), `boolean` (radio), `date`. Reusar os mocks de Storybook do organism como fonte — nunca inventar shape/valor de campo.
+1. **`@always`** — renderiza o card e abre o modal de edicao com os valores atuais.
+2. Renderiza todo valor de campo no card e no modal — um teste consolidado (nao dividir). Precisa cobrir **um campo por tipo** que o organism suporta. Reusar os mocks de Storybook do organism como fonte — nunca inventar shape/valor de campo.
 3. Descarta mudancas ao cancelar o modal de edicao.
-4. Atualiza system fields com sucesso — validacao escondida apos submit valido, feedback de sucesso, card reflete o novo valor.
-5. Atualiza custom fields com sucesso — submit, feedback, reabrir, valida persistencia.
+4. Atualiza campos com sucesso — validacao escondida apos submit valido, feedback de sucesso, card reflete o novo valor.
+5. Atualiza campos configuraveis (quando existirem, ex. campos custom) com sucesso — submit, feedback, reabrir, valida persistencia.
 6. Mostra feedback de erro e mantem o estado do modal quando o update falha.
 
 Card multi-item segue o mesmo set **mais** um caso de visibilidade com 2-3 itens.
+
+> **Exemplo real:** em cards System+Custom Fields o teste 2 precisa cobrir explicitamente um campo por tipo `string`/`list`/`multiple`/`boolean`/`date` — os cinco tipos suportados pelo organism daquele dominio. Um organism com um conjunto de tipos diferente cobre os tipos que ele de fato suporta, nao esses cinco especificamente.
 
 ## Seletores e asserts
 
@@ -67,15 +69,16 @@ Trigger e "o card tem attachment", pra single-item e multi-item. Quando tem, adi
 
 ## Fixtures de update — sequencia no mesmo path, corpo real de POST
 
-`mockFromList` chaveia uma rota por `metodo + hash(postData)`, e rotas Playwright sao LIFO — uma fixture de update por teste **sombreia** o GET compartilhado da entidade. A fixture precisa ser uma sequencia no mesmo path incluindo o GET inicial: `[GET (entidade inicial), POST (corpo exato), GET (entidade atualizada)]`. O corpo do POST precisa ser **exatamente igual** ao output do write mapper do organism — nunca adivinhe o corpo a mao; capture com um logger temporario em `page.on('request', ...)`, rode uma vez, fixe o valor, remova o logger.
+`mockFromList` chaveia uma rota por `metodo + hash(postData)`, e rotas Playwright sao LIFO — uma fixture de update por teste **sombreia** o GET compartilhado da entidade. A fixture precisa ser uma sequencia no mesmo path incluindo o GET inicial: `[GET (entidade inicial), POST (corpo exato), GET (entidade atualizada)]`. O corpo do POST precisa ser **exatamente igual** ao output do mapper de escrita do organism — nunca adivinhe o corpo a mao; capture com um logger temporario em `page.on('request', ...)`, rode uma vez, fixe o valor, remova o logger.
 
 ## Dividindo uma spec de card inchada
 
-Uma spec que acumula o set canonico + testes de attachment + cobertura completa de tipo de custom field pode passar de 10 testes num unico arquivo `mode: 'serial'`, virando o gargalo de teste lento. Divida por dependencia de mock compartilhado (nao por contagem arbitraria), mantendo o mesmo `setup.js`/POM em todo arquivo novo, cada um com exatamente um teste `@always`. Antes de tirar `mode: 'serial'` de um arquivo dividido, rode com `--repeat-each=5 --workers=4` no arquivo isolado e depois `--repeat-each=3 --workers=8` no grupo inteiro — os dois precisam passar em toda repeticao.
+Uma spec que acumula o set canonico + testes de attachment + cobertura completa de tipo de campo pode passar de 10 testes num unico arquivo `mode: 'serial'`, virando o gargalo de teste lento. Divida por dependencia de mock compartilhado (nao por contagem arbitraria), mantendo o mesmo `setup.js`/POM em todo arquivo novo, cada um com exatamente um teste `@always`. Antes de tirar `mode: 'serial'` de um arquivo dividido, rode com `--repeat-each=5 --workers=4` no arquivo isolado e depois `--repeat-each=3 --workers=8` no grupo inteiro — os dois precisam passar em toda repeticao.
 
 ## Referencias cruzadas
 
 - [[Playbook/visao-profile]]
 - [[Playbook/container]]
+- [[Playbook/component-conventions]]
 - [[Playbook/red-flags]]
 - [[Templates/Codigo/spec.playwright]]

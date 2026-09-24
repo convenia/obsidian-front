@@ -8,7 +8,7 @@ date: 2026-09-24
 
 # Template: container.vue
 
-Esqueleto do container fino de card. Guia: [[Playbook/container]]. Tokens: [[Playbook/visao-profile]].
+Esqueleto do container fino de card. Guias: [[Playbook/container]], [[Playbook/component-conventions]] (ordenacao de atributos). Tokens: [[Playbook/visao-profile]].
 
 ```vue
 <script setup>
@@ -16,33 +16,32 @@ import { computed, ref, provide } from 'vue'
 import * as types from '<ROOT_ALIAS>types'
 import { useRoute } from 'vue-composition-wrapper'
 import { mapState, mapActions } from '@convenia/macros/vuex-composition.macro'
-import <Entity>Card from '@convenia/employee-organisms/SystemFields/<Group>/fragments/<Card>/<Card>.vue'
+import <Entity>Card from '<ORGANISM_IMPORT>/<Card>.vue'
 
 const route = useRoute()
 
-// canEdit — fonte muda por visao, ver <CAN_EDIT_EXPR> em Playbook/visao-profile
 const { <canEditState> } = mapState('<canEditModule>')
-const { <entity>, systemFields, customFields } = mapState('<STORE_MODULE>')
+const { <entity>, fieldsMetadata } = mapState('<STORE_MODULE>')
 
 const {
   [types.<TYPE_PREFIX>_GET_<AREA>_<ENTITY>]: get<Entity>,
   [types.<TYPE_PREFIX>_DELETE_<AREA>_<ENTITY>]: delete<Entity>,
   [types.<TYPE_PREFIX>_UPDATE_<AREA>_<ENTITY>]: update<Entity>,
   [types.<TYPE_PREFIX>_UPDATE_<AREA>_<ENTITY>_FILES]: update<Entity>Files, // so cards com attachment
-  [types.<TYPE_PREFIX>_OPTIONS_GET_CITIES]: getCitiesAction,               // so cards com select dependente
+  [types.<TYPE_PREFIX>_OPTIONS_GET_<DEPENDENT_OPTION>]: getDependentOptionAction, // so cards com select dependente
 } = mapActions()
 
 const canEdit = computed(() => <CAN_EDIT_EXPR>)
 const isLoading = ref(false)
 
 // so cards com select dependente — omitir quando nao houver
-const getCities = async (stateId) => {
+const getDependentOption = async (parentValue) => {
   isLoading.value = true
-  const [ , data ] = await getCitiesAction(stateId)
+  const [ , data ] = await getDependentOptionAction(parentValue)
   isLoading.value = false
   return data
 }
-provide('getCities', getCities)
+provide('getDependentOption', getDependentOption)
 
 const onRemove = async ({ id, callback }) => {
   const [ err ] = await delete<Entity>({ id, employeeId: route.params.employeeId })
@@ -73,25 +72,29 @@ const onSubmit = async ({ id, data, addedFiles, deletedFiles, callback }) => {
   <div class="<CARD_CLASS>">
     <<entity>-card
       :can-edit="canEdit"
-      :is-loading="isLoading"
       :<entity>="<entity>"
-      :system-fields="systemFields?.<sub>"
-      :custom-fields="customFields?.<sub>"
-      @submit="onSubmit"
+      :fields-metadata="fieldsMetadata?.<sub>"
+      :is-loading="isLoading"
       @remove="onRemove"
+      @submit="onSubmit"
     />
   </div>
 </template>
 ```
 
-Cards com attachment adicionam duas props derivadas do payload:
+Atributos ordenados: `can-edit`, `<entity>`, `fields-metadata`, `is-loading` (alfabetico, sem estrutural aqui) → `@remove`, `@submit` (eventos, alfabetico, por ultimo).
+
+> **Exemplo real:** em cards System+Custom Fields o metadado chega em dois eixos e o container passa duas props (`:system-fields="systemFields?.<sub>" :custom-fields="customFields?.<sub>"`) em vez de uma `:fields-metadata`. Mantendo a ordem alfabetica: `can-edit`, `custom-fields`, `<entity>`, `is-loading`, `system-fields` → `@remove`, `@submit`.
+
+Cards com attachment adicionam props de capacidade derivadas do metadado (nomes definidos pelo organism, confirmar no fragment antes de fixar):
 
 ```js
-const canRemoveFiles = computed(() => !systemFields.value?.<sub>?.attachment?.mandatory)
-const canViewAttachments = computed(() => !!systemFields.value?.<sub>?.attachment)
+const canRemoveFiles = computed(() => !fieldsMetadata.value?.<sub>?.attachment?.mandatory)
+const canViewAttachments = computed(() => !!fieldsMetadata.value?.<sub>?.attachment)
 ```
 
 ## Referencias cruzadas
 
 - [[Playbook/container]]
+- [[Playbook/component-conventions]]
 - [[Playbook/visao-profile]]

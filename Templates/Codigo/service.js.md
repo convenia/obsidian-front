@@ -11,10 +11,10 @@ date: 2026-09-24
 Esqueleto da camada de service da area, dividido por card. Guia: [[Playbook/services-and-mappers]]. Tokens: [[Playbook/visao-profile]].
 
 ```js
-// services/<Area>/index.js — barrel puro, sem logica de fields/entidade aqui
+// services/<Area>/index.js — barrel puro, sem logica de metadado/entidade aqui
 export * from './<CardA>'
 export * from './<CardB>'
-export * from './SystemFields'
+export * from './Fields'
 
 export const getOptions = async () => {
   const [ err, data ] = await request(get.Get<Area>Options)
@@ -23,18 +23,15 @@ export const getOptions = async () => {
 ```
 
 ```js
-// services/<Area>/SystemFields.js — o unico getSystemFields, os dois eixos
-import * as service from '<ROOT_ALIAS>services/SystemField'
-import { <AREA>_AREA } from '@convenia/common-organisms/SystemFields/content/consts'
-import { mapSystemFields, mapCustomFields } from '@convenia/employee-organisms/SystemFields/<Group>/content/mappers'
+// services/<Area>/Fields.js — o unico fetch de metadado do card
+import * as service from '<ROOT_ALIAS>services/Fields'
+import { <AREA_CONST> } from '<ORGANISM_IMPORT>/content/consts'
+import { mapFieldsMetadata } from '<ORGANISM_IMPORT>/content/mappers'
 
-export const getSystemFields = async ({ employeeId } = {}) => {
+export const getFieldsMetadata = async ({ employeeId } = {}) => {
   try {
-    const [ err, sections ] = await service.getSystemFields({ employeeId, area: <AREA>_AREA.LABEL })
-    return [ err, {
-      systemFields: mapSystemFields(sections || []),
-      customFields: mapCustomFields(sections || []),
-    } ]
+    const [ err, sections ] = await service.getFields({ employeeId, area: <AREA_CONST>.LABEL })
+    return [ err, mapFieldsMetadata(sections || []) ]
   } catch (err) {
     return [ err, null ]
   }
@@ -43,7 +40,7 @@ export const getSystemFields = async ({ employeeId } = {}) => {
 
 ```js
 // services/<Area>/<Card>.js — GET + write daquele card
-import { map<Domain>Input } from '@convenia/employee-organisms/SystemFields/<Group>/content/mappers/<domain>'
+import { map<Domain>Input } from '<ORGANISM_IMPORT>/content/mappers/<domain>'
 
 export const get<Entity> = async (params) => {
   try {
@@ -59,9 +56,9 @@ export const get<Entity> = async (params) => {
 
 export const update<Entity> = async (params) => {
   try {
-    const { employeeId, id, schema, bypass: bcv, invalidFields = [], ...data } = params || {}
+    const { employeeId, id, metadata, bypass: bcv, invalidFields = [], ...data } = params || {}
     const options = bcv ? { headers: { bcv } } : {}
-    const body = map<Domain>Input({ entityId: id, schema, data, invalidFields })
+    const body = map<Domain>Input({ entityId: id, metadata, data, invalidFields })
     const url = `<ENTITY_BASE>`
 
     const { data: saved } = await rest.put(url, body, options) || {}
@@ -72,9 +69,11 @@ export const update<Entity> = async (params) => {
 }
 ```
 
+> **Exemplo real:** em cards System+Custom Fields `Fields.js` chama `mapSystemFields`/`mapCustomFields` (dois mappers, um por eixo) em vez de um `mapFieldsMetadata` unico, e `update<Entity>` recebe `schema` (o objeto id-keyed de custom fields) em vez de um `metadata` generico.
+
 Regras a nao esquecer:
 
-- `schema` e o objeto inteiro de custom fields da sub-area (id-keyed), nunca `.schema` de dentro dele.
+- O metadado passado ao mapper de escrita e o objeto inteiro daquela sub-area, nunca um sub-campo dele.
 - Erros sempre retornam `[err, null]`, nunca throw.
 - Retorno de sucesso e sempre o dado bruto (`[null, data]`), nunca `[null, true]`.
 - Card single-item: `update<Entity>` e um POST create-or-replace, nome de servico `create<Entity>`.

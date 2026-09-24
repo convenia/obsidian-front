@@ -18,8 +18,8 @@ test.describe('<Card>', <group>Tags, () => {
   test.describe.configure({ mode: 'serial' })
   test.beforeEach(mockDefault<Group>)
 
-  // 1. @always — renderiza card + abre modal, valida SYSTEM fields
-  test('should render the card and open the edit modal with the system fields', { tag: '@always' }, async ({ page, <group> }) => {
+  // 1. @always — renderiza card + abre modal, valida valores atuais
+  test('should render the card and open the edit modal with the current values', { tag: '@always' }, async ({ page, <group> }) => {
     await <group>.goTo<Group>Page()
     const card = page.locator('<CARD_CLASS>')
     await expect(card).toBeVisible()
@@ -27,12 +27,12 @@ test.describe('<Card>', <group>Tags, () => {
     await expect(page.locator('.c-form-builder-modal')).toBeVisible()
   })
 
-  // 2. custom + system em CARD e MODAL — um custom field por tipo (string/list/multiple/boolean/date)
-  test('should render all custom and system field values in the info card and edit modal', async ({ page, <group> }) => {
-    await <group>.mockGetEmployeeFieldsWithCustomFields()
-    await <group>.mockGetEmployee<Card>WithCustomFields()
+  // 2. um campo por tipo, em CARD e MODAL
+  test('should render all field values in the info card and edit modal', async ({ page, <group> }) => {
+    await <group>.mockGetFieldsMetadataVariant()
+    await <group>.mockGetEmployee<Card>Variant()
     await <group>.goTo<Group>Page()
-    // ...uma asserção por tipo, no card e no modal — reusar mocks de Storybook do organism
+    // ...uma asserção por tipo suportado pelo organism, no card e no modal — reusar mocks de Storybook
   })
 
   // 3. descarta ao cancelar
@@ -44,8 +44,8 @@ test.describe('<Card>', <group>Tags, () => {
     await expect(page.getByTestId('form-builder-modal-submit-button')).toBeHidden()
   })
 
-  // 4. atualiza SYSTEM fields
-  test('should update system fields successfully', async ({ page, <group>, customExpectations }) => {
+  // 4. atualiza campos com sucesso
+  test('should update fields successfully', async ({ page, <group>, customExpectations }) => {
     await <group>.mockUpdateEmployee<Card>()
     await <group>.goTo<Group>Page()
     await page.getByTestId('info-edit-button').first().click()
@@ -53,25 +53,27 @@ test.describe('<Card>', <group>Tags, () => {
     await customExpectations.hasFeedback({ page, type: 'success', message: '<success msg>', index: 0 })
   })
 
-  // 5. atualiza CUSTOM fields — reabre e valida persistencia
-  test('should update custom fields successfully', async ({ page, <group>, customExpectations }) => {
-    await <group>.mockGetEmployeeFieldsWithCustomFields()
-    await <group>.mockGetEmployee<Card>WithCustomFields()
-    await <group>.mockUpdateEmployee<Card>WithCustomFields()
+  // 5. atualiza campos configuraveis (quando existirem) — reabre e valida persistencia
+  test('should update configurable fields successfully', async ({ page, <group>, customExpectations }) => {
+    await <group>.mockGetFieldsMetadataVariant()
+    await <group>.mockGetEmployee<Card>Variant()
+    await <group>.mockUpdateEmployee<Card>Variant()
     await <group>.goTo<Group>Page()
     // ... editar, submeter, reabrir, validar persistencia
   })
 
   // 6. erro — feedback de erro + modal mantem estado
   test('should display error feedback and keep the modal state when update fails', async ({ page, <group>, customExpectations }) => {
-    await <group>.mockGetEmployeeFieldsWithCustomFields()
-    await <group>.mockGetEmployee<Card>WithCustomFields()
-    await <group>.mockUpdateEmployee<Card>WithCustomFieldsError()
+    await <group>.mockGetFieldsMetadataVariant()
+    await <group>.mockGetEmployee<Card>Variant()
+    await <group>.mockUpdateEmployee<Card>VariantError()
     await <group>.goTo<Group>Page()
     // ... editar, submeter, validar feedback de erro e que os dados ficam retidos
   })
 })
 ```
+
+> **Exemplo real:** em cards System+Custom Fields o teste 2 e 5 chamam `mockGetEmployeeFieldsWithCustomFields`/`mockGetEmployee<Card>WithCustomFields` (nomeados pelo eixo `customFields`) em vez de um `...Variant` generico.
 
 Attachment (so cards com anexo, dois testes extras): substituir (POST + DELETE) e remover (DELETE apenas), via `createDocumentFilesRequestTracker` + `expectRequests`.
 

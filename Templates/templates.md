@@ -18,6 +18,10 @@ Esqueletos de codigo prontos pra copiar, extraidos dos guias de [[Playbook/playb
 - [[Templates/Codigo/loader-composable]] — loader do container pai. Guia: [[Playbook/loader]].
 - [[Templates/Codigo/spec.playwright]] — set canonico de teste Playwright. Guia: [[Playbook/testing]].
 
+## Convencoes (sem template de codigo)
+
+- [[Playbook/component-conventions]] — regras de props/atributos/comentarios/imports/Storybook, sem esqueleto proprio (aplicam por cima dos templates acima).
+
 ## Referencias cruzadas
 
 - [[home]]

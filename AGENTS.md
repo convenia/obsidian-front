@@ -21,8 +21,8 @@ date: 2026-09-24
 
 ## Contexto do vault
 
-- Este vault documenta o padrao de arquitetura frontend usado pelas SPAs Convenia (spa-admin, spa-colab) quando um card de tela consome um organism de `@convenia/components`.
-- A fonte original desse padrao e a skill `spas-reference`, mantida no submodule `.@convenia` do repo `spa-colab` (`src/organisms/Employee/SystemFields/specs/skills/spas-reference/`). Este vault nao copia essa skill: destrincha o padrao dela em guias e templates proprios, reutilizaveis em qualquer migracao de card, nao so System Fields.
+- Este vault documenta o padrao **generico** de arquitetura frontend usado pelas SPAs Convenia (spa-admin, spa-colab) quando um card de tela consome um organism de `@convenia/components` — vale pra qualquer card/dominio, nao um card especifico.
+- A fonte original desse padrao sao as skills `spas-reference` e `system-custom-fields-organism`, mantidas no submodule `.@convenia` do repo `spa-colab` (`src/organisms/Employee/SystemFields/specs/skills/`). Este vault nao copia essas skills: destrincha o padrao delas em guias e templates proprios generalizados. Onde o caso real (System+Custom Fields) ajuda a ilustrar, ele aparece rotulado "Exemplo real" — nunca como a regra padrao.
 - A pasta [[Playbook/playbook]] concentra os guias de orientacao (o que, por que, red flags).
 - A pasta [[Templates/templates]] contem os esqueletos de codigo prontos pra copiar.
 - A pasta [[Projects/projects]] organiza projetos/features frontend ativos.
