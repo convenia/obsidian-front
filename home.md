@@ -31,6 +31,10 @@ Este vault funciona como um segundo cerebro operacional para orientar devs e IA 
 3. Usar os templates de [[Templates/templates]] como ponto de partida de cada camada.
 4. Conferir o resultado contra [[Playbook/red-flags]] antes de considerar a migracao pronta.
 
+## Como comecar um modulo novo
+
+Assunto separado (nivel de modulo, nao de card) — ver [[Playbook/new-module]] e o esqueleto em [[Templates/Codigo/module-scaffold]].
+
 ## Origem do conteudo
 
 O padrao documentado aqui foi destrinchado das skills `spas-reference` e `system-custom-fields-organism` (submodule `.@convenia` do repo `spa-colab`, path `src/organisms/Employee/SystemFields/specs/skills/`), que documentam a migracao de cards System+Custom Fields. Este vault generaliza esse conteudo pra qualquer card que consome um organism compartilhado — System+Custom Fields aparece so como "Exemplo real" pontual dentro dos guias, nunca como o vocabulario padrao das regras.

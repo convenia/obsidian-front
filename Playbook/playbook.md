@@ -28,6 +28,12 @@ Indice dos guias de orientacao pro padrao generico de card frontend: qualquer ca
 
 Cada guia linka o esqueleto de codigo correspondente em [[Templates/templates]].
 
+## Outros guias
+
+Assunto separado do padrao card+organism acima — nivel de modulo inteiro, nao de card:
+
+- [[Playbook/new-module]] — como criar um modulo novo (`src/<Module>/`) do zero: skeleton de pastas, wiring de aliases/store/rotas.
+
 ## Referencias cruzadas
 
 - [[home]]
