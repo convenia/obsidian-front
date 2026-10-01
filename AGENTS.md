@@ -10,7 +10,7 @@ date: 2026-09-24
 
 ## Regras obrigatorias
 
-- Sempre responder e escrever em portugues brasileiro, sem acentos no corpo do texto.
+- Sempre responder e escrever em portugues brasileiro.
 - Sempre usar links internos em formato wikilink, como [[home]].
 - Toda nota Markdown precisa ter frontmatter com pelo menos `tags` e `date`.
 - Toda nota Markdown segue o formato limpo: frontmatter sem recuo, titulo na coluna 1, secoes em `##` na coluna 1, listas com um nivel de indentacao.
@@ -18,6 +18,7 @@ date: 2026-09-24
 - Nomes de arquivos sem acento e sem espaco, usando hifens quando necessario.
 - Termos tecnicos (nomes de arquivo, tokens, trechos de codigo) ficam em ingles mesmo dentro de prosa em portugues.
 - Cada guia de [[Playbook/playbook]] termina em secao "Referencias cruzadas", linkando o template de codigo correspondente e os outros guias relacionados.
+- Escrever as anotacoes num nivel aproximado pra quem e junior ou nao conhece o front, quando necessario — explicar termo tecnico e o "porque" antes de assumir que o leitor ja sabe.
 
 ## Contexto do vault
 
@@ -33,3 +34,4 @@ date: 2026-09-24
 - Para gerar codigo (container, service, store, teste), comecar pelo template correspondente em [[Templates/templates]] e resolver os tokens usando o profile.
 - Antes de fechar qualquer tarefa, conferir contra [[Playbook/red-flags]] — cada item ali e uma violacao conhecida do padrao.
 - Registrar contexto, objetivo e decisoes na nota correta de [[Projects/projects]].
+- Sempre que uma nota for atualizada, verificar se outras notas do vault ficam contraditorias e se alguma parte do codigo real (spa-admin, spa-colab) precisa de ajuste correspondente.
