@@ -17,7 +17,7 @@ Vault Obsidian que serve como **referência preferencial de estilo de código fr
 
 - [[AGENTS]] — regras de escrita do vault (lidas pelo agente ao editar o vault).
 - [[Playbook/playbook]] — guias: o que fazer, por que, red flags.
-- [[Templates/templates]] — esqueletos de código prontos pra copiar.
+- [[Templates/templates]] — boilerplates de código prontos pra copiar.
 - [[Projects/projects]] — projetos/features ativos.
 
 ## Instalar como referência para agentes

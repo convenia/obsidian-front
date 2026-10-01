@@ -8,25 +8,26 @@ date: 2026-09-24
 
 # Templates
 
-Esqueletos de codigo prontos pra copiar, extraidos dos guias de [[Playbook/playbook]]. Resolver os tokens pela [[Playbook/visao-profile]] antes de usar qualquer um.
+Boilerplates de código prontos pra copiar, extraídos dos guias de [[Playbook/playbook]]. Resolver os tokens pela [[Playbook/visao-profile]] antes de usar qualquer um.
 
-## Codigo
+## Código
 
 - [[Templates/Codigo/container.vue]] — container fino do card. Guia: [[Playbook/container]].
-- [[Templates/Codigo/service.js]] — service da area, dividido por card. Guia: [[Playbook/services-and-mappers]].
+- [[Templates/Codigo/service.js]] — service da área, dividido por recurso. Guia: [[Playbook/services]].
+- [[Templates/Codigo/mapper.js]] — mappers de leitura/escrita da entidade. Guia: [[Playbook/mappers]].
 - [[Templates/Codigo/store-module.js]] — types/mutations/actions da store. Guia: [[Playbook/store]].
 - [[Templates/Codigo/loader-composable]] — loader do container pai. Guia: [[Playbook/loader]].
-- [[Templates/Codigo/spec.playwright]] — set canonico de teste Playwright. Guia: [[Playbook/testing]].
+- [[Templates/Codigo/spec.playwright]] — set canônico de teste Playwright. Guia: [[Playbook/testing]].
 
-## Modulo (nivel acima do card)
+## Módulo (nível acima do card)
 
-- [[Templates/Codigo/module-scaffold]] — esqueleto de pastas/arquivos pra um modulo novo. Guia: [[Playbook/new-module]].
+- [[Templates/Codigo/module-scaffold]] — boilerplate de pastas/arquivos pra um módulo novo. Guia: [[Playbook/new-module]].
 
-## Convencoes (sem template de codigo)
+## Convenções (sem template de código)
 
-- [[Playbook/component-conventions]] — regras de props/atributos/comentarios/imports/Storybook, sem esqueleto proprio (aplicam por cima dos templates acima).
+- [[Playbook/component-conventions]] — regras de props/atributos/comentários/imports/Storybook, sem boilerplate próprio (aplicam por cima dos templates acima).
 
-## Referencias cruzadas
+## Referências cruzadas
 
 - [[home]]
 - [[Playbook/playbook]]
