@@ -18,6 +18,7 @@ Este vault funciona como um segundo cerebro operacional para orientar devs e IA 
 
 ## Navegacao
 
+- [[README]] — instalacao como referencia pra Claude/Codex
 - [[Agents/agents]]
 - [[Playbook/playbook]]
 - [[Templates/templates]]
