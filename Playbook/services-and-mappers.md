@@ -12,7 +12,7 @@ date: 2026-09-24
 
 ## O que e
 
-A camada de service da SPA pra um card migrado: um fetch unico do metadado de campos do card, o service da area dividido por card, e onde vivem os mappers de leitura/escrita.
+A camada de service da SPA: um fetch unico do metadado de campos, o service da area dividido por recurso/feature, e onde vivem os mappers de leitura/escrita.
 
 ## O fetch unico de metadado
 
@@ -32,44 +32,59 @@ A camada de service da SPA pra um card migrado: um fetch unico do metadado de ca
 }
 ```
 
-> **Exemplo real:** em cards System+Custom Fields (`spa-colab/.@convenia/.../SystemFields/`) esse metadado vem em **dois eixos** — `systemFields` (nome-chaveado, campo definido pelo backend) + `customFields` (id-chaveado, campo configuravel pela empresa) — no mesmo `GET .../fields/{visao}?area=`. O eixo duplo e uma particularidade desse dominio, nao a regra geral: um card sem essa distincao usa o mesmo padrao com um unico eixo de `fields`.
-
 ## Por que a regra existe (HARD RULE — sem hibrido)
 
-Se a area ainda usa a busca legada de metadado (uma rota por pedaco do metadado, ou um mapper que monta o metadado inline na SPA), remova — nao mantenha hibrido. A area inteira — mesmo um card irmao ainda nao migrado pro organism — le o metadado do mesmo fetch unificado.
+Se a area ainda usa a busca legada de metadado (uma rota por pedaco do metadado, ou um mapper que monta o metadado inline na SPA), remova — nao mantenha hibrido. A area inteira — mesmo um card irmao ainda nao migrado — le o metadado do mesmo fetch unificado.
 
-## Area service — dividido por card
+## Area service — dividido por recurso
 
-A migracao parte do `index.js` monolitico da area e fatia em `services/<Area>/{<Card>.js, Fields.js, index.js}`:
+A migracao parte do `index.js` monolitico da area e fatia em `services/<Area>/{<Feature>.js, Fields.js, index.js}`:
 
 | Arquivo | Papel |
 |---|---|
-| `<Card>.js` | GET + write (`create`/`update`/`delete`) daquele card; importa o mapper de escrita do organism |
+| `<Feature>.js` | GET + write (`create`/`update`/`delete`) daquele recurso; nome do arquivo e o nome real do recurso/dominio (ex.: `Personal.js`, `Dependents.js`) — nunca `Card.js`. Um arquivo pode agrupar mais de um sub-recurso relacionado quando fizer sentido (ex.: varios tipos de documento no mesmo arquivo). Importa o mapper de escrita de `content/mappers/` do modulo. |
 | `Fields.js` | o unico fetch de metadado (`get<Fields>`) da area inteira |
-| `index.js` | so barrel — `export *` de cada arquivo de card + `Fields`; sem logica de metadado aqui |
+| `index.js` | so barrel — `export *` de cada arquivo de recurso + `Fields`; sem logica de metadado aqui |
 
-## Mappers — moram no organism, nunca na SPA
+## Nomenclatura — prefixo casado com o verbo HTTP
 
-- O mapper de leitura do metadado vive no organism compartilhado (`<ORGANISM_IMPORT>/content/mappers`). A SPA NAO define mapper de leitura nem faz slicing de secao inline.
-- Payload de escrita tambem e do organism: o mapper de escrita daquele dominio. A SPA importa e passa os dados brutos do form + o metadado adiante.
-- A SPA NAO cria `services/<Area>/mappers.js` proprio e NAO monta o payload por conta — isso duplica o mapper de escrita do organism.
+Toda funcao de service segue o mesmo prefixo, casado com o verbo HTTP e com o nome do recurso na rota:
 
-## Regras do mapper de escrita
+| Prefixo | Verbo HTTP | Uso |
+|---|---|---|
+| `get<Recurso>` | GET | leitura |
+| `create<Recurso>` | POST | criacao (ou upsert em recurso single-item) |
+| `update<Recurso>` | PUT | atualizacao |
+| `delete<Recurso>` | DELETE | remocao |
 
-- Uma lista de campos invalidos (`invalidFields[]`) e a fonte de verdade pras chaves puladas — nunca `delete` no spread.
-- Chave pulada e **omitida**, nunca setada como `null` (backend trata `null` como "limpar").
+O nome do recurso na funcao acompanha o nome do recurso na rota — nao invente um nome de funcao desalinhado da URL que ela chama.
+
+Acoes que nao sao CRUD puro (duplicar, bloquear/desbloquear, cancelar, disparar um envio) podem fugir desse prefixo — mas so quando a rota em si tambem foge do CRUD. E excecao pontual, nunca o padrao pra um recurso novo. Se o nome for `update*`/`create*`/etc., o verbo HTTP por baixo tem que bater — nunca um `updateX` que na real dispara um POST.
+
+Parametros: destructure direto na assinatura da funcao (`({ employeeId, ... })`). So use `params` + destructure interno quando a lista de campos ficar longa (ex.: um `update` com varios campos passa de ~100 caracteres numa linha so).
+
+Servicos que ainda falam com GraphQL usam argumento posicional (ex.: `updateGoal(goalId, payload)`) em vez de objeto desestruturado — isso e **codigo legado**. GraphQL nao deve ser usado em rotas/modulos novos; REST novo sempre desestrutura objeto.
+
+## Mappers — arquivo dedicado em content/mappers, nunca inline no service
+
+- Mapper de leitura (`mapEntity`) e de escrita (`mapEntityInput`) moram **dentro do proprio modulo** que consome o service, em `<ROOT_ALIAS>content/mappers/<entity>` — irmao de `content/consts/` e `content/forms/` (ver [[Playbook/new-module]]). Nao e um pacote externo compartilhado; e codigo do proprio modulo.
+- Nome do mapper acompanha a entidade: leitura e `mapEntity`, escrita e `mapEntityInput` — nunca um nome de "domain" generico solto.
+- Mapper de escrita so e criado quando o payload do form precisa de transformacao antes de virar body da API. Se o dado do form ja bate com o shape esperado pela API, o service chama `rest.<verbo>` direto, sem mapper.
+- A regra que importa e a de **separacao de arquivo**: o mapper nunca e definido inline dentro do arquivo de service (`<Feature>.js`) — sempre um arquivo proprio em `content/mappers/`, importado pelo service. Definir a funcao de mapper direto dentro do `services/index.js` (misturando fetch + transformacao no mesmo arquivo) e o red flag a evitar, nao o fato de o mapper existir dentro do modulo.
+- O service importa o mapper e passa os dados brutos do form + o metadado adiante — a logica de transformacao fica isolada em `content/mappers/`, nunca duplicada ad-hoc dentro do service.
+
 
 ## Regras do service de escrita
 
 - O metadado passado ao mapper de escrita e o objeto inteiro daquela sub-area, nunca so um sub-campo dele.
-- Sempre desestruturar `invalidFields = []` com default.
 - Erros sao capturados e retornados como `[err, null]` — nunca lancados (throw).
 - Retornar o registro criado/atualizado bruto (`[null, data]`) — nunca `[null, true]`.
+- PUT e DELETE normalmente nao devolvem body na resposta — `update<Entity>`/`delete<Entity>` nao devem depender de destructure da resposta do `rest.put`/`rest.delete`; retorne o dado local ja conhecido. `create<Entity>` (POST) e diferente: normalmente devolve e destructura o body da resposta.
 
-## Single-item vs multi-item
+## Recurso single-item vs multi-item
 
-- **Card single-item**: o "update" e um POST create-or-replace (upsert). Nome do service: `create<Entity>`. Registro ausente (404) e tratado como registro vazio, nao como erro: `if (err?.response?.status === 404) return [null, null]`.
-- **Card multi-item**: services `create`/`update`/`delete` separados na camada de service — a store ainda expoe uma unica action de escrita (ver [[Playbook/store]]).
+- **Recurso single-item**: o "update" e um POST create-or-replace (upsert). Nome do service: `create<Entity>`.
+- **Recurso multi-item**: services `create`/`update`/`delete` separados na camada de service, cada um recebendo o `id` do item pra `update<Entity>`/`delete<Entity>` — a store ainda expoe uma unica action de escrita (ver [[Playbook/store]]).
 
 ## Referencias cruzadas
 
