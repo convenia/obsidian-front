@@ -3,7 +3,7 @@ tags:
   - playbook
   - frontend
   - tokens
-date: 2026-09-24
+date: 2026-10-01
 ---
 
 # Visão Profile
@@ -26,10 +26,10 @@ Se um token não tiver binding definido pra sua visão, pare — o padrão não 
 |---|---|---|---|
 | `<ROOT>` | pasta raiz da feature | `Employee` | `Information` |
 | `<ROOT_ALIAS>` | nome do import alias do módulo (uso: `<ROOT_ALIAS>:content/...`) | `@Employee` | `@Information` |
-| `<TYPE_PREFIX>` | prefixo do nome dos types da store | `EMPLOYEE` | `INFO` |
+| `<TYPE_PREFIX>` | prefixo do nome dos types da store (primeira parte da fórmula `<TYPE_PREFIX>_<FEATURE>_<VERB>_<AREA>`, ver [[Playbook/store-types]]) | `EMPLOYEE` | `INFO` |
 | `<TYPE_NS>` | namespace dos types | `employee/` | `information/` |
 | `<STORE_MODULE>` | nome do módulo Vuex | `employee<Area>` | `information<Area>` |
-| `<MODULE_REG>` | como o módulo é registrado | `meta.storeModules` da rota | export no barrel `src/Information/store/index.js` |
+| `<MODULE_REG>` | como o módulo é registrado | `meta.storeModules` da rota (lazy, via `registerStoreModules` em `src/Common/modules/router/helpers.js`) | export no barrel `src/Information/store/index.js` |
 | `<VISAO>` | segmento de role no `<METADATA_ENDPOINT>` | fixo `admin` | param `route`, default `'employee'` |
 | `<REST_PATH>` | import do middleware REST | `@modules/request/middlewareRest` | `@modules/http/middlewareRest` |
 | `<ID_SOURCE>` | origem do id da empresa/colaborador | `companyUuid` de `@modules/authHelpers` | `COMPANY_UUID`/`EMPLOYEE_UUID` de `@src/cookies` |

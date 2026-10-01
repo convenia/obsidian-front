@@ -4,7 +4,7 @@ tags:
   - frontend
   - modulo
   - arquitetura
-date: 2026-09-24
+date: 2026-10-01
 ---
 
 # Criar um Módulo Novo no SPA
@@ -22,7 +22,7 @@ src/<Module>/
 ├── containers/          # smart components, Composition API — obrigatório
 ├── services/            # camada de API, contrato [err, data] — obrigatório
 ├── store/               # Vuex — obrigatório
-│   ├── index.js         # barrel: export { default as <slice> } from '@<Module>:store/<Feature>'
+│   ├── index.js         # barrel — só spa-colab: export { default as <slice> } from '@<Module>:store/<Feature>'
 │   ├── types.js         # TODAS as type constants do módulo, um arquivo só
 │   └── <Feature>/index.js (ou <Feature>.js)   # um slice Vuex por feature
 ├── routes/              # obrigatório
@@ -61,7 +61,11 @@ Adicione as entradas do módulo em `jsconfig.json` → `compilerOptions.paths`:
 
 **Não mexa em `vite.config.js`.** Os aliases do Vite são gerados automaticamente a partir do `jsconfig.json` por `setViteAliases(__dirname)` (`@convenia/utils/modules/vite/setViteAliases`) — editar só o `jsconfig.json` já resolve build e IDE.
 
-### 2. `src/store.js` — registrar o módulo na store raiz
+### 2. Registrar os slices de store
+
+O mecanismo difere por SPA. Ver tabela completa em [[Playbook/store]].
+
+**spa-colab — eager via `src/store.js`:**
 
 ```js
 import * as <module> from '@<Module>:store'
@@ -74,7 +78,20 @@ export default new Vuex.Store({
 })
 ```
 
-**Todo módulo registrado aqui fica sempre ativo** (eager) — não existe carregamento lazy por rota neste repo (confirmado: nenhuma ocorrência de `meta.storeModules` no codebase). Não invente esse mecanismo achando que é um padrão — não é.
+No spa-colab, **todo módulo registrado aqui fica sempre ativo** (eager) — não existe `meta.storeModules` nesse repo.
+
+**spa-admin — lazy por rota via `meta.storeModules`:**
+
+`src/store.js` do spa-admin só registra `...common`. Slice de feature MUST ser declarado na rota que o usa; o guard de rota chama `registerStoreModules` (`src/Common/modules/router/helpers.js`), que faz `store.registerModule` se o módulo ainda não existe. No spa-admin o módulo **não** tem `store/index.js`.
+
+```js
+// src/<Module>/routes/index.js
+meta: {
+  storeModules: {
+    <slice>: () => import('@<Module>:store/<Feature>'),
+  },
+},
+```
 
 ### 3. `routes/index.js` do módulo + `src/Common/routes/index.js`
 
@@ -120,14 +137,16 @@ Pro caso (b), o módulo precisa de duas constantes a mais, em arquivos que **já
 
 ### 4. Store — shape interno e naming
 
-`store/types.js` é um arquivo único pro módulo inteiro (não um por feature), com todas as constantes:
+`store/types.js` é um arquivo único pro módulo inteiro (não um por feature), com todas as constantes. Naming e valor seguem [[Playbook/store-types]]:
 
 ```js
-export const <MODULE>_GET_<NOUN> = '<MODULE>/GET_<NOUN>'
-export const <MODULE>_SET_<NOUN> = '<MODULE>/SET_<NOUN>'
+export * from '@types'
+
+export const <TYPE_PREFIX>_<FEATURE>_GET_<AREAS> = '<TYPE_NS><TYPE_PREFIX>_<FEATURE>_GET_<AREAS>'
+export const <TYPE_PREFIX>_<FEATURE>_SET_<AREAS> = '<TYPE_NS><TYPE_PREFIX>_<FEATURE>_SET_<AREAS>'
 ```
 
-`store/index.js` é o barrel que reúne um módulo Vuex por feature/slice:
+No spa-colab, `store/index.js` é o barrel que reúne um módulo Vuex por feature/slice:
 
 ```js
 export { default as <sliceA> } from '@<Module>:store/<FeatureA>'
@@ -142,7 +161,7 @@ Cada slice (`store/<Feature>/index.js`) é um `{ state, getters, mutations, acti
 
 ## Red flags
 
-- Inventar `meta.storeModules` ou qualquer carregamento lazy de store por rota — não existe nesse repo; todo módulo registrado em `src/store.js` é sempre eager.
+- Usar o mecanismo de registro da outra SPA: `meta.storeModules` no spa-colab (lá todo módulo é eager via `src/store.js`) ou barrel + `src/store.js` no spa-admin (lá é lazy por rota).
 - Editar `vite.config.js` pra adicionar alias — os aliases vêm do `jsconfig.json` via `setViteAliases`, nunca duplique em `vite.config.js`.
 - Criar as constantes `GROUPING_<MODULE>_*` em outro lugar que não `src/Common/content/groupings/types.js`, ou registrar o grouping fora de `baseGroupings`/`groupingsList` em `src/Common/content/groupings/index.js`.
 - Separar `store/types.js` por feature dentro do módulo — é um arquivo único pro módulo inteiro.
@@ -153,5 +172,7 @@ Cada slice (`store/<Feature>/index.js`) é um `{ state, getters, mutations, acti
 
 - [[Playbook/playbook]]
 - [[Playbook/component-conventions]]
+- [[Playbook/store-types]]
+- [[Playbook/store]]
 - [[Templates/Codigo/module-scaffold]]
 - [[Templates/Codigo/spec.playwright]]

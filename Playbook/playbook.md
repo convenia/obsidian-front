@@ -3,7 +3,7 @@ tags:
   - playbook
   - indice
   - frontend
-date: 2026-09-24
+date: 2026-10-01
 ---
 
 # Playbook
@@ -17,13 +17,14 @@ date: 2026-09-24
 1. [[Playbook/visao-profile]] — os tokens parametrizáveis, primeiro de tudo.
 2. [[Playbook/services]] — fetch unificado de metadado, service layer, contrato `[ err, data ]`.
 3. [[Playbook/mappers]] — mappers de leitura/escrita em `content/mappers`.
-4. [[Playbook/store]] — shape do Vuex, naming, ordering.
-5. [[Playbook/loader]] — carregamento em lote, provide/inject, options dependentes.
-6. [[Playbook/container]] — o container fino, contrato de eventos.
-7. [[Playbook/component-conventions]] — convenções do lado do organism/componente (props, atributos, comentários, imports, Storybook).
-8. [[Playbook/testing]] — contrato de teste Playwright, set canônico.
-9. [[Playbook/red-flags]] — checklist final antes de dar a migração por pronta.
-10. [[Playbook/cleanup]] — sweep de código legado, última etapa.
+4. [[Playbook/store-types]] — naming, valor e ordem dos types.
+5. [[Playbook/store]] — uso do slice Vuex: state, mutations, actions, feedback, getters, consumo no container.
+6. [[Playbook/loader]] — carregamento em lote, provide/inject, options dependentes.
+7. [[Playbook/container]] — o container fino, contrato de eventos.
+8. [[Playbook/component-conventions]] — convenções do lado do organism/componente (props, atributos, comentários, imports, Storybook).
+9. [[Playbook/testing]] — contrato de teste Playwright, set canônico.
+10. [[Playbook/red-flags]] — checklist final antes de dar a migração por pronta.
+11. [[Playbook/cleanup]] — sweep de código legado, última etapa.
 
 ## Templates de código
 

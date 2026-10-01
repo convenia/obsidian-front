@@ -4,7 +4,7 @@ tags:
   - segundo-cerebro
   - frontend
   - vue
-date: 2026-09-24
+date: 2026-10-01
 aliases:
   - inicio
 ---
@@ -28,7 +28,7 @@ Este vault funciona como um segundo cérebro operacional para orientar devs e IA
 ## Como começar uma migração de card
 
 1. Ler [[Playbook/visao-profile]] e resolver os tokens pra sua visão (spa-admin, spa-colab-self, spa-colab-supervisor).
-2. Seguir a ordem dos guias: [[Playbook/services]] → [[Playbook/mappers]] → [[Playbook/store]] → [[Playbook/loader]] → [[Playbook/container]] → [[Playbook/testing]] → [[Playbook/cleanup]].
+2. Seguir a ordem dos guias: [[Playbook/services]] → [[Playbook/mappers]] → [[Playbook/store-types]] → [[Playbook/store]] → [[Playbook/loader]] → [[Playbook/container]] → [[Playbook/testing]] → [[Playbook/cleanup]].
 3. Usar os templates de [[Templates/templates]] como ponto de partida de cada camada.
 4. Conferir o resultado contra [[Playbook/red-flags]] antes de considerar a migração pronta.
 
