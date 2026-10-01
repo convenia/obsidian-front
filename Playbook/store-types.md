@@ -88,7 +88,7 @@ Cada verbo tem um papel só. Action e mutation MUST ter types distintos — nunc
 | `SET` | mutation | escreve no state | `<TYPE_PREFIX>_<FEATURE>_SET_<AREAS>` |
 | `RESET` | mutation | volta a chave ao valor vazio | `<TYPE_PREFIX>_<FEATURE>_RESET_<AREAS>` |
 | `HAS` | getter | boolean derivado | `<TYPE_PREFIX>_<FEATURE>_HAS_<AREAS>` |
-| `CAN_<AÇÃO>` | getter | boolean de permissão/estado derivado | `<TYPE_PREFIX>_<FEATURE>_CAN_PAGINATE_<AREAS>` |
+| `CAN_<AÇÃO>` | getter | boolean de permissão/estado derivado | `<TYPE_PREFIX>_<FEATURE>_CAN_EDIT_<AREA>` |
 
 - NÃO existe `CREATE` quando o recurso tem create e update: os dois são a mesma action `UPDATE` (ver [[Playbook/store]]).
 - Ação fora do CRUD (duplicar, compartilhar, arquivar, filtrar) MAY usar o verbo do domínio (`<TYPE_PREFIX>_<FEATURE>_SHARE_<AREA>`), sempre como action.
@@ -153,7 +153,6 @@ Ao tocar uma área com type fora da convenção, renomeie na mesma mudança:
 ## Referências cruzadas
 
 - [[Playbook/store]]
-- [[Playbook/store-pagination]]
 - [[Playbook/visao-profile]]
 - [[Playbook/services]]
 - [[Playbook/red-flags]]
