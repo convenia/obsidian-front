@@ -17,7 +17,11 @@ description: >
   through MirageJS or plain page.route/mockFromList, and flags MirageJS-
   specific issues (dead models/factories, hardcoded routes with no failure
   branch, competing page.route for a Mirage-served endpoint) — see "Mocking
-  backend for integration tests". Also validates a PR's diff coverage
+  backend for integration tests". When a task asks to migrate a feature's
+  REST mocks to MirageJS (or to add Mirage to a feature), it invokes the
+  peer skill `convenia-mirage-mocks:mirage-mocks` for the src/<Feature>/mocks
+  scaffolding and keeps ownership of the Playwright side (POM, fixtures,
+  storageKey, spec) — see "Migrating a feature's mocks to MirageJS". Also validates a PR's diff coverage
   against the team's minimum threshold and writes the missing unit/integration
   tests when it falls short — see "Coverage gate". Also audits a branch/PR's
   test quality (not just its coverage number) and produces a findings list
@@ -28,7 +32,7 @@ description: >
   anything is written — see "Continuous learning loop".
 metadata:
   category: testing
-  version: "3.5.8"
+  version: "3.6.1"
 ---
 
 # SPA Test Standards (Convenia)
@@ -116,6 +120,8 @@ Recurring findings in tests that "pass today" but a good portion wouldn't catch 
 8. A MirageJS model/factory/seed created for a feature but no route ever reads from `schema.db` for it (a "dead mock" that gives the impression data is served, when the real screen either gets no data or is actually fed by a different mechanism). See `templates/integration-mirage-mock.md`.
 9. A MirageJS route with a hardcoded response and no `window.__<feature>MockConfig` failure branch — makes the error UI for that endpoint untestable without editing the route file itself.
 10. An ad-hoc `page.route` registered for an endpoint a feature's MirageJS `routes/index.js` already serves — the two compete/race depending on registration order instead of one clear source of truth.
+11. A standalone helper module that wraps `addMirage`/`setMirageMockConfig` (e.g. `pages/helpers/<Thing>.helper.js` exporting `mockX(page)` + a `DEFAULT_X` array). Every Mirage-enabled feature calls `addMirage` directly inside a POM method and exposes `setMockConfig()`; default seed data lives in `tests/specs/<Feature>/fixtures/index.js`. See "Playwright-side layout for Mirage" below.
+12. Top-level helper functions or constants shared across specs declared inside a spec file — see "Spec holds the flow and the assertions".
 
 ## Decision rule: unit vs. integration
 - **Pure logic** (form validation, data normalization, calculation) → extract to an exported function + direct unit test, no `mount`. → `templates/unit-pure-function.md`
@@ -162,8 +168,10 @@ feature, not per spec:
   aggregated centrally in `src/mocks/*`, bootstrapped in `src/main.js` behind
   `VITE_USE_MOCK`): an in-browser fake REST server with real status codes,
   pagination, and a `schema.db`. Currently used by `Chat`, `Files`,
-  `Specialist`, `Disc` (fully REST) and `Strategic` (REST download endpoint
-  only — its report data is GraphQL, mocked separately). Playwright seeds it
+  `Specialist`, `Disc` (fully REST), `Settings` (SystemFields domain),
+  `Recruitment` (JobPosition tags only) and `Strategic` (REST download
+  endpoint only — its report data is GraphQL, mocked separately). Before
+  writing, grep `src/mocks/bootstrap/index.js` for the current list. Playwright seeds it
   pre-navigation via `addMirage(page, { storageKey, factories, mockConfig })`
   and flips runtime failure scenarios via
   `setMirageMockConfig(page, { storageKey, mockConfig })`, both from
@@ -189,11 +197,69 @@ feature, not per spec:
    not as the silent default — flag it as an open decision rather than
    assuming it.
 
+## Migrating a feature's mocks to MirageJS (delegate to `convenia-mirage-mocks`)
+
+Trigger: the task asks to migrate a spec/feature from `page.route`/`mockFromList`
+REST fixtures to MirageJS, or to add Mirage routes/models/factories to a
+feature (including extending an existing Mirage feature with a new domain or
+endpoint).
+
+1. **Invoke the peer skill `convenia-mirage-mocks:mirage-mocks`** (Skill tool)
+   for everything under `src/`: `src/<Feature>/mocks/{models,factories,routes,fixtures}`,
+   the central aggregators in `src/mocks/{models,factories,routes,seeds,fixtures}/index.js`,
+   the `applyMockBootstrap(server, '<key>')` line, and the path helpers in
+   `src/<Feature>/services/**/names.js` that both the service and the Mirage
+   route import. Feed it the endpoint list from the feature's services and
+   the JSON fixtures being replaced (status codes, payload shapes, error
+   messages) as the API contract.
+   - If the skill isn't available (plugin `convenia-mirage-mocks` not
+     installed or not loaded), **say so explicitly** and suggest
+     `/plugin install convenia-mirage-mocks@convenia-ai-devtools`; then fall
+     back to `templates/integration-mirage-mock.md`. Never silently skip it.
+2. **This skill keeps the test side**: decide what to migrate (REST only —
+   GraphQL stays on `graphQLMocker`/`mockFromList`), wire the POM, move the
+   seed data to fixtures, rewrite the spec, delete the replaced JSON
+   fixtures, and audit with the anti-patterns above (dead mock, route with no
+   failure flag, competing `page.route`, standalone Mirage helper).
+3. **Check against what's already in the repo**, not only the templates:
+   open at least one sibling Mirage feature (`Settings/SystemFields` for a
+   domain-split feature, `Files`/`Disc` for a flat one) and the repo docs
+   `mocks_with_mirage.md` / `tests_with_mirage.md` when present, and match
+   their layout.
+
+### Playwright-side layout for Mirage (match exactly)
+- **`addMirage` goes directly in a POM method** (`mockAPIData`, `seed<Things>`,
+  `mock<Things>`), with the defaults as parameters
+  (`{ things = defaultThings, mockConfig = {} } = {}`). No standalone helper
+  module wrapping it, even when two POMs seed the same data — repeat the
+  ~8-line `addMirage` call in each POM.
+- **Runtime failure flags go through a POM method named `setMockConfig`**
+  that calls `setMirageMockConfig(this.page, { storageKey, mockConfig })`.
+- **Default seed data goes in `tests/specs/<Feature>/fixtures/index.js`**,
+  exported as `default<Things>`. When two sub-features (`<Feature>/A`,
+  `<Feature>/B`) share it, put it at the feature root fixtures, never
+  import from inside a sibling sub-feature's `pages/`.
+- **`storageKey` is per mock domain**: a flat feature uses the feature key
+  (`'files'`, `'disc'`); a feature whose mocks are split by domain
+  subfolder (`src/<Feature>/mocks/routes/<Domain>/`) uses `<feature><Domain>`
+  (`'settingsSystemFields'`, `'specialistChat'`). The same key goes in
+  `applyMockBootstrap`, in the route's `window.__<key>MockConfig`, and in
+  every POM `addMirage`/`setMirageMockConfig` call.
+- **One factory file per model** (`factories/[<Domain>/]<model>Factory.js`),
+  with `index.js` only spreading them.
+
 ## Mock isolation between tests (Vitest)
 `mockResolvedValueOnce`/`mockRejectedValueOnce` queue values on the mock for the **whole module**, not per `it()`. If a `describe` has more than one function/scenario using the same mock (e.g., `rest.get` called by several service functions, or by several tests of the same function), a value queued by a previous test that wasn't consumed "leaks" into the next test — classic symptom: a call count or return value that doesn't make sense looking only at the failing test, because the cause is in the PREVIOUS test. Rule: whenever a unit test file has more than one `it()` using the same module mock, add `beforeEach(() => { vi.resetAllMocks() })` in the top-level `describe` — not `clearAllMocks` (which only clears call history, not the `mockResolvedValueOnce` queue).
 
+## Spec holds the flow and the assertions; interactions and shared constants live in the Page Object
+A spec file declares the `test.extend` fixture, the `describe`/`beforeEach`, and the tests' steps and `expect`s. Nothing else is defined at the top of the spec:
+- **No top-level interaction functions in a spec** (`const navigateToX = ...`, `const openYAction = async ({ page }) => ...`, `const closeFeedback = ...`). Each becomes a POM method that uses `this.page` (e.g. `navigateToNextStages()`, `openTagAction({ tagId, action })`, `closeFeedback({ testId })`), and the spec calls `pom.method(...)`. Navigation shortcuts wrap the existing POM navigation method instead of duplicating it.
+- **Constants used by 2+ specs, or by a spec and its POM** (entity ids, card/row testids, fixed URLs) go in `tests/specs/<Feature>/<Area>/pages/constants.js`, imported by both the POM and the specs — one source of truth. Reference in the repo: `tests/specs/Benefits/Details/BulkEdit/pages/constants.js`. Export the raw id and derive testids from it (`` `candidate-card-${CANDIDATE_ID}` ``) so other testid shapes (`selectable-card-`, `row-`) reuse the same id.
+- **A constant used only in one spec stays in that spec.** A value that already exists in a fixture (e.g. a seeded record's id) is derived from it (`const [ { id: EDITABLE_TAG_ID } ] = defaultTags`), never re-typed.
+- **When you move a constant to `pages/constants.js`, replace the same literal in the sibling specs/POMs of that area too** (testid strings, `navigateTo({ id })` args, glob URL strings via template literal). Leave literal regexes and recorded JSON fixtures alone.
+
 ## Integração: extracting a helper shared between specs (Playwright)
-When 2+ specs repeat the **same post-setup interaction sequence** (not the setup itself, which can legitimately differ per entry point), extract a helper function to `tests/specs/<Feature>/specs/helpers/<name>.js`, keeping each spec's specific setup in the original file. Rule: only extract the part that is identical across the specs; if the setup differs (different route, different mock), don't force both into a single helper — the helper covers only the real intersection, the rest stays at the call site. Full template in `templates/integration-shared-helper.md`.
+New shared interactions go on the Page Object (previous section). `tests/specs/<Feature>/specs/helpers/` modules exist in some features; keep using them where they already exist, but don't add new spec-level helper modules when a POM method fits. When 2+ specs repeat the **same post-setup interaction sequence** (not the setup itself, which can legitimately differ per entry point), extract a helper function to `tests/specs/<Feature>/specs/helpers/<name>.js`, keeping each spec's specific setup in the original file. Rule: only extract the part that is identical across the specs; if the setup differs (different route, different mock), don't force both into a single helper — the helper covers only the real intersection, the rest stays at the call site. Full template in `templates/integration-shared-helper.md`.
 
 ## Integration rules (Playwright)
 - Selectors: always `getByTestId`/`getByRole`. Avoid a loose CSS selector when a testid exists.
@@ -201,6 +267,7 @@ When 2+ specs repeat the **same post-setup interaction sequence** (not the setup
 - Page Object Model: reuse existing methods (`mockAPIData`, `start`, `mockPageSetup`) instead of duplicating mocks in each spec. If several specs of the same feature repeat the same mock block in `beforeEach`, add a convenience method to the Page Object (e.g., an `mockXPageSetup()` that aggregates the base `mockPageSetup()` plus sub-area-specific mocks) — see `templates/integration-page-object.md`.
 - **Default every new mock to a JSON fixture + `mockFromList`** (see `templates/integration-page-object.md`), not a hand-written `page.route(...).fulfill(...)` — this is the single most repeated PR review comment across features, so treat it as the starting point, not something to fix after review flags it. This includes POST/PUT create/edit mocks: even though the body comes from a form, a Playwright test fills that form with fixed literal values (e.g. `fillTemplateForm({ name: 'Novo template de teste', ... })`), so the real request body is fully deterministic — trace it once (component → payload-building logic → service call) and hardcode the resulting shape as the fixture's `postData`. Don't assume "the body comes from a form" makes it unmockable; only a body that genuinely varies between runs (a generated id/timestamp, per-test-parametrized input) does.
   - When the fixture's route overrides an endpoint another mock already serves on the same path (e.g. a list's base success `GET` mock, with a `POST` create mock layered on top), **don't register a second, narrower `mockFromList` call** — it replaces the whole route handler and the earlier method's mock stops firing, since `mockFromList`'s handler never falls back to a previously-registered one. Instead spread the base fixture's array together with the new entry into ONE call: `mockFromList([ ...GetItems, ...CreateItemSuccess ], this.page, this.graphQLMocker)`.
+  - **JSON fixtures live in `tests/specs/<Feature>/data/`** (subfolders by domain allowed, e.g. `data/Goals/`, `data/Objectives/`), never in `RequestMocks/`, `mocks/`, `fixtures/` or similar — this is the front-end playbook standard (`convenia/obsidian-front` → `Playbook/testing.md`) and a recurring PR review comment. When creating a new feature's fixtures, start in `data/`; when touching a feature that still uses `RequestMocks/`, rename the folder with `git mv` and update every import path (`grep -rl "<Feature>/RequestMocks"`), then confirm with eslint and `npx playwright test tests/specs/<Feature> --list`. Don't confuse this with `src/<Feature>/mocks/` (MirageJS server), which keeps its own name.
   - The only case that still needs a hand-written, parametrized `page.route` (kept as a named Page Object method, never inlined in the spec) is a list/search endpoint whose response depends on a URL query string — `mockFromList` never inspects query params, so there's no fixture shape that can match it. When that method overrides a route another mock already serves for a different method, keep a `route.fallback()` branch for the other methods.
 - One spec file per functional area, not per whole page. When a file passes ~300-400 lines or gets slow, it's a candidate for a split. Name files by area (`<Feature><Area>.spec.js`), preserving the imports/constants each new file actually uses (run lint afterward — see "Commands"). After a split, confirm the total test count didn't change (`npx playwright test <path> --list | tail -1`) before and after.
 - When moving/renaming specs, check the file's imports: not every spec uses the absolute alias (`@tests/specs/<Feature>/...`) — some still import mocks via a relative path (`../mocks/X`), which silently breaks when moved to a different folder (`import/no-unresolved` in eslint catches this, but only if you run it). Prefer the absolute alias when fixing, it's more robust to future moves.
@@ -297,13 +364,40 @@ or silently doing nothing.
    - For a MirageJS-enabled feature, also apply "Mocking backend for
      integration tests" and its anti-patterns (dead mock, hardcoded route
      with no failure branch, competing `page.route` for a Mirage-served
-     endpoint) — see `templates/integration-mirage-mock.md`.
+     endpoint, standalone Mirage helper) and "Playwright-side layout for
+     Mirage" — see `templates/integration-mirage-mock.md`. If the PR is a
+     Mirage migration, also invoke `convenia-mirage-mocks:mirage-mocks` to
+     check the `src/<Feature>/mocks` side against its conventions.
 3. **Write each finding as a short comment**: file:line (or file/behavior
    when no single line applies), what's untested or weak today, and the
    concrete mutation that would slip through unnoticed. Order real gaps (a
    plausible code change nothing catches) before minor/low-risk ones (prop
    pass-through, cosmetic branches) — don't inflate the list with filler to
    look thorough.
+   - **Comment format (list and PR comments).** Write in pt-BR and start
+     every finding with two tags: `[TIPO DE AJUSTE] [CRITICIDADE]`.
+     - The first tag names the **kind of change the author has to make**,
+       not the area of the code. Use `[COBERTURA]` for a missing test or an
+       assertion too weak to catch a mutation, `[LÓGICA]` for a behavior or
+       business-rule change/bug, `[REFATORAÇÃO]` for restructuring with no
+       behavior change (duplicated seed, coupling to internals),
+       `[PADRONIZAÇÃO]` for not following the team pattern (`resetAllMocks`,
+       `vi.hoisted`, POM/fixture layout), and `[REMOÇÃO]` for dead code or an
+       unnecessary test. Never use area tags like `[TESTE]`, `[CÓDIGO]` or
+       `[COMPORTAMENTO]`.
+     - The second tag is `[ALTA]` (a plausible regression nothing catches),
+       `[MÉDIA]` (a real gap or risk, but narrower) or `[BAIXA]` (a minor
+       assertion, cosmetics, or optional cleanup).
+     - Example: `[COBERTURA] [ALTA] O teste começa com a lista vazia e
+       confere que continua vazia; se o guard for removido, nada quebra.`
+   - When the user picks posting to the PR, publish all approved findings
+     as **one** review (`gh api -X POST .../pulls/<N>/reviews` with a
+     `comments` array, `event: "COMMENT"`), with each finding inline on its
+     line in the diff. Anchor to `side: "LEFT"` when the finding is about
+     a removed line.
+     - Every code `suggestion` must hold real, runnable code. Trace the
+       actual values first (e.g. what a normalizer really returns), and
+       never put a placeholder in it.
 4. **Halt at a User-Input Gate before touching any file.** This is what makes
    Review mode different from "Coverage gate", which writes the missing tests
    directly once under threshold. Present the findings list, then invoke

@@ -4,6 +4,8 @@
 
 **How to tell a feature uses this pattern**: `ls src/<Feature>/mocks/` exists with `models/`, `factories/`, `routes/` subfolders, and `grep -r miragejs src/<Feature>` returns hits. If instead the feature's Playwright specs mock everything via `page.route(...)`/`mockFromList(json, page, graphQLMocker)` with no `src/<Feature>/mocks/miragejs` folder, that feature uses the plain `page.route` pattern — stay consistent with it (`templates/integration-page-object.md`), don't introduce Mirage there without a deliberate decision.
 
+**Scaffolding the src side:** invoke the `convenia-mirage-mocks:mirage-mocks` skill for models/factories/routes/aggregators (see `SKILL.md` § "Migrating a feature's mocks to MirageJS"). The snippets below are the fallback when that skill isn't available, and the reference for the Playwright side, which this skill owns.
+
 **Mirage only covers REST.** If the feature's services call GraphQL (check `src/<Feature>/services/index.js` for a `middleware(query.X, ...)` call vs. a REST `fetch`/`axios`), those calls are mocked separately with `graphQLMocker.setQuery(...)` or `mockFromList` — never assume every network call in a Mirage-enabled feature goes through the mock server. A feature can legitimately mix both (Mirage for its REST endpoints, `graphQLMocker` for its GraphQL ones).
 
 ## Feature-local mock server pieces
@@ -77,8 +79,16 @@ export default function myFeatureSeeds (server) {
 ## Playwright side: seeding and runtime config
 
 ```js
+// tests/specs/MyFeature/fixtures/index.js
+export const defaultItems = [
+  { id: 'item-1', name: 'Item 01' },
+]
+```
+
+```js
 // pages/MyFeaturePage.js
 import { addMirage, setMirageMockConfig } from '@tests:utils/index.js'
+import { defaultItems } from '../fixtures'
 
 export default class MyFeaturePage {
   constructor (logged) {
@@ -86,7 +96,7 @@ export default class MyFeaturePage {
     this.page = logged.page
   }
 
-  async mockAPIData ({ items = [], mockConfig = {}, createRandom = 0 } = {}) {
+  async mockAPIData ({ items = defaultItems, mockConfig = {}, createRandom = 0 } = {}) {
     await this.logged.mockAPIData()
     await addMirage(this.page, {
       storageKey: 'myFeature',
@@ -119,7 +129,9 @@ test('should show an error when the items list fails', { tag: '@always' }, async
 
 ## Rules
 
-- **`storageKey` must match exactly** the key name `applyMocksBootstrap` (`src/mocks/bootstrap/index.js`) uses for that feature (e.g. `'chat'`, `'files'`, `'strategic'`) — a typo silently no-ops (the bootstrap function returns early on a missing/unparseable `sessionStorage` entry) instead of failing loudly.
+- **`storageKey` must match exactly** the key name `applyMocksBootstrap` (`src/mocks/bootstrap/index.js`) uses for that feature (e.g. `'chat'`, `'files'`, `'strategic'`) — a typo silently no-ops (the bootstrap function returns early on a missing/unparseable `sessionStorage` entry) instead of failing loudly. For a feature whose mocks are split by domain subfolder (`src/<Feature>/mocks/routes/<Domain>/`), the key is `<feature><Domain>` (e.g. `'settingsSystemFields'`), and the route reads `window.__<feature><Domain>MockConfig`.
+- **`addMirage` lives in the POM method, never in a standalone helper module**; failure flags go through a POM method named `setMockConfig`; default seed data lives in `tests/specs/<Feature>/fixtures/index.js` as `default<Things>` (at the feature root when sibling sub-features share it).
+- **One factory file per model** (`factories/[<Domain>/]<model>Factory.js`), `index.js` only spreads them.
 - **`factoryKey` must match a real key exported from `src/<Feature>/mocks/factories/index.js`** (e.g. `conversation`, not `conversations`) — `server.createList(factoryKey, ...)` throws at runtime with an unregistered key, but a silently-wrong-but-registered key (e.g. reusing another feature's factory) creates the wrong shape of data with no error at all.
 - **Every failure branch a route can return must be reachable from a `mockConfig` flag**, not hardcoded — if a route always returns success, no spec can exercise the error UI without editing the route file itself.
 - **Prefer `values` (explicit records) over `createRandom` (faker-generated)** when the spec's assertions depend on specific field values (an id referenced later, a name asserted on screen); reserve `createRandom` for scenarios that only need "N items exist" (pagination, list-length checks).

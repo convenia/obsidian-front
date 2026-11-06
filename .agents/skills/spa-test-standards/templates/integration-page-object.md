@@ -2,7 +2,35 @@
 
 **When to use:** every feature with integration specs should have a Page Object per area/screen, reused by all specs for that area — avoids duplicating API mocks in each spec file.
 
-Minimal structure: `mockAPIData` (loads the feature's baseline JSON fixtures via `mockFromList`), `start` (navigates + waits for the page to load), and convenience methods for scenario-specific mocks (success/error variants, sub-area setup) reused by several specs.
+Minimal structure: `mockAPIData` (loads the feature's baseline JSON fixtures via `mockFromList`), `start` (navigates + waits for the page to load), convenience methods for scenario-specific mocks (success/error variants, sub-area setup) reused by several specs, and the **interaction methods** the specs need (navigate to a sub-page, open an action, close a feedback). The spec keeps only steps and assertions; no helper function is declared at the top of a spec.
+
+```js
+// pages/constants.js — shared by the POM and every spec of this area
+export const ITEM_ID = 'c875a1bf-4b45-473c-a1f6-af052492f9d3'
+export const ITEM_CARD_TEST_ID = `item-card-${ITEM_ID}`
+```
+
+```js
+// pages/MyFeaturePage.js (interaction methods)
+import { expect } from '@playwright/test'
+import { ITEM_ID } from './constants'
+
+  async navigateToItem () {
+    await this.navigateToDetail({ itemId: ITEM_ID })
+  }
+
+  async openItemAction ({ itemId, action }) {
+    const option = this.page.getByTestId(`option--${itemId}`)
+    await option.scrollIntoViewIfNeeded()
+    await option.click()
+    await this.page.getByTestId(`action-${action}`).click()
+  }
+
+  async closeFeedback ({ testId }) {
+    await this.page.getByTestId(testId).getByRole('button').click()
+    await expect(this.page.getByTestId(/^feedback-/)).toHaveCount(0)
+  }
+```
 
 ## Default: JSON fixture + `mockFromList`
 
