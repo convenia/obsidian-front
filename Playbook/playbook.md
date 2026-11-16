@@ -34,6 +34,11 @@ Assunto separado do padrao card+organism acima — nivel de modulo inteiro, nao 
 
 - [[Playbook/new-module]] — como criar um modulo novo (`src/<Module>/`) do zero: skeleton de pastas, wiring de aliases/store/rotas.
 
+## Review
+
+- [[Playbook/review]] — como revisar um PR frontend: ordem das fontes, o que conferir, severidade dos achados.
+- [[Playbook/fontes]] — mapa entre os guias deste vault e o playbook da Convenia, com as divergencias conhecidas.
+
 ## Referencias cruzadas
 
 - [[home]]

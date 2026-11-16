@@ -42,8 +42,10 @@ O container passa a entidade e o metadado de campos que o organism precisa pra r
 ## Convencoes
 
 - `<script setup>` e obrigatorio pra container novo.
-- `mapState`/`mapActions` vem de `@convenia/macros/vuex-composition.macro` — nunca de `vuex` direto, nunca via `this.$store`.
-- `useRoute` vem de `vue-composition-wrapper`, nao de `vue-router`.
+- Acesso a store e ao router depende da stack do SPA — confira no `package.json` antes de cobrar (playbook `introducao/composition-api.md:39-124`, ver [[Playbook/fontes]]):
+  - Vue 2 + Vuex 3: `mapState`/`mapActions` vem de `@convenia/macros/vuex-composition.macro` — nunca de `vuex` direto — e `useRoute` vem de `vue-composition-wrapper`, nao de `vue-router`.
+  - Vue 3 + Vuex 4: helpers nativos do `vuex`, sem o macro. Vue 3 + Pinia: `defineStore`.
+  - Em qualquer stack, nunca `this.$store` num container novo.
 - Atributos do template (inclusive na tag do organism) seguem a ordenacao alfabetica de [[Playbook/component-conventions]]: diretivas estruturais → atributos alfabeticos → eventos alfabeticos.
 - O organism le contexto via `inject` (ver [[Playbook/loader]] pra onde colocar o `provide`).
 
