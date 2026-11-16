@@ -56,9 +56,9 @@ Nao deixe comentario no codigo. As unicas excecoes: uma constraint genuinamente 
 
 Vale tambem pra Storybook: nenhum arquivo de story leva comentario — os mocks e nomes de variante sao a documentacao.
 
-## Imports — nomeados do barrel raiz, nunca path profundo
+## Imports — organisms pelo barrel raiz; `@convenia/components` pelo caminho profundo
 
-Componentes de biblioteca compartilhada se importam pelo barrel raiz do pacote, com import nomeado — nunca por um path interno/profundo:
+Organisms (pacotes `@convenia/<area>-organisms`) se importam pelo barrel raiz do pacote, com import nomeado — nunca por um path interno/profundo:
 
 ```js
 // certo
@@ -69,6 +69,16 @@ import ConfirmationModal from '@convenia/common-organisms/Modals/Confirmation'
 ```
 
 O binding importado define a tag no template (`ConfirmationModal` renderiza como `<confirmation-modal>`).
+
+Pra `@convenia/components` a regra e a inversa, e quem manda e o playbook (`lib-compartilhada/requisitos-tecnicos.md:14-21`, ver [[Playbook/fontes]]): importar pelo caminho profundo, nunca pelo barrel.
+
+```js
+// certo
+import CButton from '@convenia/components/CButton'
+
+// errado — barrel
+import { CButton } from '@convenia/components'
+```
 
 ## Consts de enum — sempre `Object.freeze`
 

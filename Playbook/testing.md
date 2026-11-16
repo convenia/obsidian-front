@@ -17,7 +17,7 @@ Como o lado SPA de uma migracao de card e validado: specs de integracao Playwrig
 
 ## Escopo
 
-O lado SPA e validado por specs de integracao Playwright — nao crie teste unitario novo pro container. Regra de field (validacao, mask, `hide` condicional, obrigatoriedade) e territorio de teste unitario do organism, nao Playwright. Renderizar um valor de campo ponta a ponta (fetch → store → widget do organism) e integracao e entra no set canonico.
+O lado SPA e validado por specs de integracao Playwright. O container fino de card so liga organism, store e service, e essa ligacao ja e coberta pelo Playwright — por isso ele nao ganha teste unitario. A regra geral e do playbook (`testes/escolha.md:15-17`, ver [[Playbook/fontes]]): unitario em SPA fica pra logica pura que a integracao nao alcanca (validacao customizada, mapper, helper); service e wiring nao ganham unitario. Se um container tiver logica propria, o primeiro passo e tira-la dele (ver [[Playbook/container]]), nao testa-la ali. Todo PR precisa cobrir tambem o cenario de falha de request (`testes/integracao.md:296-391`). Regra de field (validacao, mask, `hide` condicional, obrigatoriedade) e territorio de teste unitario do organism, nao Playwright. Renderizar um valor de campo ponta a ponta (fetch → store → widget do organism) e integracao e entra no set canonico.
 
 ## Layout
 
